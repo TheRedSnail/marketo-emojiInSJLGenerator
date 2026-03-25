@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketo Emoji Subject Line Encoder</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #6c757d;
+            --border: #dee2e6;
+            --primary: #5b4fcf;
+            --primary-hover: #4a3fb8;
+            --primary-text: #ffffff;
+            --success: #28a745;
+            --input-bg: #ffffff;
+            --code-bg: #f1f3f5;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a2e;
+                --card-bg: #252540;
+                --text: #e8e8f0;
+                --text-muted: #9a9ab0;
+                --border: #3a3a55;
+                --primary: #7c6fe0;
+                --primary-hover: #6b5fd0;
+                --input-bg: #2a2a45;
+                --code-bg: #2a2a45;
+                --shadow: 0 2px 8px rgba(0,0,0,0.3);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #e040a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            padding-right: 3rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text);
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(91, 79, 207, 0.15);
+        }
+
+        .emoji-toggle {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .emoji-toggle:hover {
+            background: var(--code-bg);
+        }
+
+        .picker-container {
+            display: none;
+            margin-top: 0.75rem;
+        }
+
+        .picker-container.open {
+            display: block;
+        }
+
+        emoji-picker {
+            width: 100%;
+            --border-color: var(--border);
+            --background: var(--card-bg);
+            --input-border-color: var(--border);
+            --input-font-color: var(--text);
+            --category-font-color: var(--text-muted);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.65rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--primary-text);
+            flex: 1;
+        }
+
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-secondary {
+            background: var(--code-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { background: var(--border); }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .output-area {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+            font-size: 0.85rem;
+            background: var(--code-bg);
+            color: var(--text);
+            resize: vertical;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        .copy-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            align-items: center;
+        }
+
+        .copy-row .btn { flex-shrink: 0; }
+
+        .copy-feedback {
+            color: var(--success);
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .copy-feedback.show { opacity: 1; }
+
+        /* Preview */
+        .preview-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .emoji-preview-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--input-bg);
+        }
+
+        .emoji-preview-card .native-emoji {
+            font-size: 2rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .emoji-preview-card .twemoji-img {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+
+        .emoji-preview-card .twemoji-img img {
+            width: 36px;
+            height: 36px;
+        }
+
+        .emoji-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .emoji-info .emoji-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .emoji-info .emoji-code {
+            font-family: "SF Mono", "Cascadia Code", monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            word-break: break-all;
+        }
+
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .platform-item {
+            text-align: center;
+            padding: 0.4rem;
+            border-radius: 6px;
+            background: var(--code-bg);
+            font-size: 0.75rem;
+        }
+
+        .platform-item .platform-emoji {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .platform-item .platform-name {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .preview-note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--code-bg);
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer p { margin-bottom: 0.3rem; }
+
+        .tip {
+            margin-top: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--code-bg);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Marketo Emoji Subject Line Encoder</h1>
+            <p>Compose your email subject line with emojis, then generate the Q-encoded version for Marketo.</p>
+        </header>
+
+        <div class="card">
+            <h2>Subject Line</h2>
+            <div class="input-wrapper">
+                <textarea id="subjectInput" placeholder="Type your subject line here... e.g. Big Sale this weekend!"></textarea>
+                <button class="emoji-toggle" id="emojiToggle" title="Insert emoji">&#x1F600;</button>
+            </div>
+            <div class="picker-container" id="pickerContainer">
+                <emoji-picker id="emojiPicker"></emoji-picker>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" id="encodeBtn">Encode for Marketo</button>
+                <button class="btn btn-secondary" id="clearBtn">Clear</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="outputCard">
+            <h2>Encoded Output</h2>
+            <textarea class="output-area" id="encodedOutput" readonly></textarea>
+            <div class="copy-row">
+                <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+                <span class="copy-feedback" id="copyFeedback">Copied!</span>
+            </div>
+            <div class="tip">
+                <strong>Tip:</strong> Paste this directly into the Marketo subject line field. All non-ASCII characters (emojis, smart quotes, em-dashes, accented letters) have been Q-encoded.
+            </div>
+        </div>
+
+        <div class="card hidden" id="previewCard">
+            <h2>Emoji Preview</h2>
+            <div class="preview-grid" id="previewGrid"></div>
+            <div class="preview-note">
+                <strong>Note:</strong> Emoji appearance varies by platform and OS. The "Twemoji" column shows the open-source Twitter/X design.
+                "Native" shows your current system's rendering. Recipients will see their own platform's version.
+                <br><br>
+                <strong>Gmail:</strong> Noto Emoji (web), Apple (iOS), Google (Android) &bull;
+                <strong>Outlook:</strong> Microsoft emoji (desktop), varies (web) &bull;
+                <strong>Apple Mail:</strong> Apple emoji &bull;
+                <strong>Yahoo:</strong> Platform-native emoji
+            </div>
+        </div>
+
+        <footer>
+            <p>Uses Q-encoding (RFC 2047) to make emojis compatible with Marketo email subject lines.</p>
+            <p>All non-ASCII characters are automatically encoded when any emoji is present.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        const subjectInput = document.getElementById('subjectInput');
+        const emojiToggle = document.getElementById('emojiToggle');
+        const pickerContainer = document.getElementById('pickerContainer');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const encodeBtn = document.getElementById('encodeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const outputCard = document.getElementById('outputCard');
+        const encodedOutput = document.getElementById('encodedOutput');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyFeedback = document.getElementById('copyFeedback');
+        const previewCard = document.getElementById('previewCard');
+        const previewGrid = document.getElementById('previewGrid');
+
+        // --- Emoji Picker ---
+        emojiToggle.addEventListener('click', () => {
+            pickerContainer.classList.toggle('open');
+        });
+
+        emojiPicker.addEventListener('emoji-click', (e) => {
+            const emoji = e.detail.unicode;
+            insertAtCursor(subjectInput, emoji);
+        });
+
+        function insertAtCursor(textarea, text) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const before = textarea.value.substring(0, start);
+            const after = textarea.value.substring(end);
+            textarea.value = before + text + after;
+            const newPos = start + text.length;
+            textarea.selectionStart = newPos;
+            textarea.selectionEnd = newPos;
+            textarea.focus();
+        }
+
+        // --- Q-Encoding ---
+        const encoder = new TextEncoder();
+
+        function isAsciiPrintable(codePoint) {
+            return codePoint >= 0x20 && codePoint <= 0x7E;
+        }
+
+        function qEncodeBytes(bytes) {
+            return Array.from(bytes)
+                .map(b => '=' + b.toString(16).toUpperCase().padStart(2, '0'))
+                .join('');
+        }
+
+        function encodeForMarketo(input) {
+            if (!input) return '';
+
+            const result = [];
+            let i = 0;
+            const chars = [...input]; // Spread handles surrogate pairs correctly
+
+            while (i < chars.length) {
+                const cp = chars[i].codePointAt(0);
+
+                if (isAsciiPrintable(cp)) {
+                    // Collect ASCII run
+                    let asciiRun = '';
+                    while (i < chars.length && isAsciiPrintable(chars[i].codePointAt(0))) {
+                        asciiRun += chars[i];
+                        i++;
+                    }
+                    result.push(asciiRun);
+                } else {
+                    // Collect non-ASCII run
+                    let nonAsciiRun = '';
+                    while (i < chars.length && !isAsciiPrintable(chars[i].codePointAt(0))) {
+                        nonAsciiRun += chars[i];
+                        i++;
+                    }
+                    // Encode the run as UTF-8 Q-encoding
+                    const bytes = encoder.encode(nonAsciiRun);
+                    const encoded = qEncodeBytes(bytes);
+
+                    // RFC 2047: encoded words should be max 75 chars
+                    // "=?UTF-8?Q?" = 10 chars, "?=" = 2 chars, so payload max = 63 chars
+                    // Each byte is 3 chars (=XX), so max ~21 bytes per word
+                    const maxPayload = 63;
+                    if (encoded.length <= maxPayload) {
+                        result.push('=?UTF-8?Q?' + encoded + '?=');
+                    } else {
+                        // Split into chunks respecting grapheme boundaries
+                        const segments = splitByGraphemes(nonAsciiRun);
+                        let currentBytes = [];
+                        let currentEncoded = '';
+
+                        for (const seg of segments) {
+                            const segBytes = encoder.encode(seg);
+                            const segEncoded = qEncodeBytes(segBytes);
+
+                            if (currentEncoded.length + segEncoded.length > maxPayload && currentEncoded.length > 0) {
+                                result.push('=?UTF-8?Q?' + currentEncoded + '?=');
+                                currentEncoded = segEncoded;
+                            } else {
+                                currentEncoded += segEncoded;
+                            }
+                        }
+                        if (currentEncoded.length > 0) {
+                            result.push('=?UTF-8?Q?' + currentEncoded + '?=');
+                        }
+                    }
+                }
+            }
+
+            return result.join('');
+        }
+
+        function splitByGraphemes(str) {
+            if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                return [...segmenter.segment(str)].map(s => s.segment);
+            }
+            // Fallback: split by code points
+            return [...str];
+        }
+
+        // --- Emoji Extraction ---
+        function extractEmojis(input) {
+            const segments = splitByGraphemes(input);
+            const emojis = [];
+            const seen = new Set();
+
+            for (const seg of segments) {
+                // Check if segment contains any emoji-like character
+                const cp = seg.codePointAt(0);
+                if (cp > 0x7F && isEmojiLike(seg)) {
+                    if (!seen.has(seg)) {
+                        seen.add(seg);
+                        emojis.push(seg);
+                    }
+                }
+            }
+            return emojis;
+        }
+
+        function isEmojiLike(str) {
+            // Use a broad regex to detect emoji characters
+            // This catches most emoji including ZWJ sequences, flags, skin tones
+            const emojiRegex = /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u;
+            return emojiRegex.test(str);
+        }
+
+        // --- Preview Rendering ---
+        function renderPreview(emojis) {
+            previewGrid.innerHTML = '';
+
+            if (emojis.length === 0) {
+                previewGrid.innerHTML = '<div class="empty-state">No emojis detected in your subject line.</div>';
+                return;
+            }
+
+            for (const emoji of emojis) {
+                const card = document.createElement('div');
+                card.className = 'emoji-preview-card';
+
+                // Native emoji
+                const nativeEl = document.createElement('div');
+                nativeEl.className = 'native-emoji';
+                nativeEl.textContent = emoji;
+
+                // Twemoji
+                const twemojiEl = document.createElement('div');
+                twemojiEl.className = 'twemoji-img';
+                twemojiEl.textContent = emoji;
+                try {
+                    if (typeof twemoji !== 'undefined') {
+                        twemoji.parse(twemojiEl, {
+                            folder: 'svg',
+                            ext: '.svg'
+                        });
+                    }
+                } catch (e) {
+                    // Graceful degradation - just show native
+                }
+
+                // Info
+                const infoEl = document.createElement('div');
+                infoEl.className = 'emoji-info';
+
+                const codePoints = [...emoji].map(c =>
+                    'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')
+                ).join(' ');
+
+                const qEncoded = '=?UTF-8?Q?' + qEncodeBytes(encoder.encode(emoji)) + '?=';
+
+                infoEl.innerHTML = `
+                    <div class="emoji-name">${codePoints}</div>
+                    <div class="emoji-code">${escapeHtml(qEncoded)}</div>
+                `;
+
+                card.appendChild(nativeEl);
+                card.appendChild(twemojiEl);
+                card.appendChild(infoEl);
+
+                // Platform renderings (native - varies by viewer's system)
+                const platformGrid = document.createElement('div');
+                platformGrid.className = 'platform-grid';
+
+                const platforms = ['Apple', 'Google', 'Microsoft', 'Samsung'];
+                for (const platform of platforms) {
+                    const item = document.createElement('div');
+                    item.className = 'platform-item';
+                    item.innerHTML = `
+                        <span class="platform-emoji">${emoji}</span>
+                        <span class="platform-name">${platform}</span>
+                    `;
+                    platformGrid.appendChild(item);
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.style.width = '100%';
+                wrapper.appendChild(card);
+                wrapper.appendChild(platformGrid);
+
+                previewGrid.appendChild(wrapper);
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // --- Event Handlers ---
+        encodeBtn.addEventListener('click', () => {
+            const input = subjectInput.value;
+            if (!input.trim()) return;
+
+            const encoded = encodeForMarketo(input);
+            encodedOutput.value = encoded;
+            outputCard.classList.remove('hidden');
+
+            const emojis = extractEmojis(input);
+            if (emojis.length > 0) {
+                previewCard.classList.remove('hidden');
+            } else {
+                previewCard.classList.add('hidden');
+            }
+            renderPreview(emojis);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            subjectInput.value = '';
+            encodedOutput.value = '';
+            outputCard.classList.add('hidden');
+            previewCard.classList.add('hidden');
+            previewGrid.innerHTML = '';
+            subjectInput.focus();
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(encodedOutput.value);
+                copyFeedback.classList.add('show');
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('btn-success');
+                setTimeout(() => {
+                    copyFeedback.classList.remove('show');
+                    copyBtn.textContent = 'Copy to Clipboard';
+                    copyBtn.classList.remove('btn-success');
+                }, 2000);
+            } catch (e) {
+                // Fallback
+                encodedOutput.select();
+                document.execCommand('copy');
+            }
+        });
+    </script>
+</body>
+</html>
